@@ -7,9 +7,8 @@
 # spawn { echo 3 }
 export def spawn [
     --group (-g): string = "default", # The group
-    command: closure                  # The command to spawn
+    source_code: string                  # The command to spawn
 ] {
-    let source_code = (view source $command | str trim -l -c '{' | str trim -r -c '}')
     let config_path = $nu.config-path
     let env_path = $nu.env-path
 
@@ -46,15 +45,15 @@ export def "group add" [
         pueue group add --parallel $parallel $name
     } | str trim)
 
-    if $result == $"Group \"($name)\" is being created" {
-        return true
-    }
+    # if $result == $"Group \"($name)\" is being created" {
+    #     return true
+    # }
 
-    if $result == $"Group \"($name)\" already exists" {
-        return false
-    }
+    # if $result == $"Group \"($name)\" already exists" {
+    #     return false
+    # }
 
-    error make { msg: $"unknown output: ($result)" }
+    # error make { msg: $"unknown output: ($result)" }
 }
 
 # Removes a group. Returns `false` if the group did not exist

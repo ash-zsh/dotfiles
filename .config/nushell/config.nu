@@ -276,8 +276,7 @@ $env.config = {
     format: "auto" # b, kb, kib, mb, mib, gb, gib, tb, tib, pb, pib, eb, eib, zb, zib, auto
   }
   color_config: $light_theme   # if you want a light theme, replace `$dark_theme` to `$light_theme`
-  use_grid_icons: true
-  footer_mode: "25" # always, never, number_of_rows, auto
+  footer_mode: 25 # always, never, number_of_rows, auto
   float_precision: 2
   # buffer_editor: "emacs" # command that will be used to edit the current line buffer with ctrl+o, if unset fallback to $env.EDITOR and $env.VISUAL
 
@@ -559,6 +558,60 @@ def "path change ext" [
   [ ([$parsed.parent $parsed.stem] | path join) '.' $ext ] | str join
 }
 
+def contains [item] {
+  any { |x| $item == $x }
+}
+
+def upsearch [dir, file: string] {
+  let path = $dir | append $file | path join
+
+  try {
+    ls $path
+    $path
+  } catch {
+    if $dir == ["/"] {
+      null
+    } else {
+      upsearch ($dir | drop) $file
+    }
+  }
+}
+
+def dockit [] {
+  let config_path = upsearch (pwd | path split) ".dockit"
+  if $config_path == null {
+    error make {msg: "CWD is not within a dockit"}
+  }
+  print $"Found dockit at ($config_path)"
+  
+  # CWD is >= 0 folder deeper than dockit root
+  # Thus, relative is CWD with the first <root path length> components skipped
+  let root_len = $config_path | path dirname | path split | length
+  let rel = pwd | path split | skip $root_len | path join
+  print $"Relative directory determined to be ($rel)"
+  
+  let config = open $config_path | from nuon
+
+  docker container start $config.container
+  wezterm start --cwd (pwd) $env.EDITOR
+  docker exec --workdir $"($config.docker_dir)/($rel)" -it $config.container /bin/bash
+  docker container stop $config.container
+}
+
+def --env y [...args] {
+	let tmp = (mktemp -t "yazi-cwd.XXXXXX")
+	yazi ...$args --cwd-file $tmp
+	let cwd = (open $tmp)
+	if $cwd != "" and $cwd != $env.PWD {
+		cd $cwd
+	}
+	rm -fp $tmp
+}
+
+def t [] {
+  wezterm start --cwd (pwd) o+e>| ignore
+}
+
 use job.nu
 use math.nu
 
@@ -567,6 +620,8 @@ use livetyp.nu
 use wttr.nu
 use sds.nu
 
+use tome.nu
+
 $env.SSH_AUTH_SOCK = (gpgconf --list-dirs agent-ssh-socket)
 $env.GPG_TTY = (tty)
-gpg-connect-agent updatestartuptty /bye | ignore
+gpg-connect-agent updatestartuptty /bye o+e>| ignore

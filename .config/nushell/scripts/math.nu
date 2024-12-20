@@ -218,3 +218,101 @@ export def rem-pow-table [
 
   $id | append $pow_non_id
 }
+
+# DOES NOT WORK because stddev is population and not sample
+#
+# # Returns the standard error of a list of numbers, 
+# #
+# # Signature
+# # math stderr <list<float>> -> <float>
+# export def stderr [] {
+#   ($in | math stddev) / ($in | length | math sqrt)
+# }
+
+# export def "student f" [
+#   x: list<float>,
+#   y: list<float>
+# ] {
+#   let s2_x = ($x | math stddev) ** 2
+#   let s2_y = ($y | math stddev) ** 2
+  
+#   if $s2_x > $s2_y {
+#     {
+#       f: ($s2_x / $s2_y),
+#       dir: "left over right"
+#     }
+#   } else {
+#     {
+#       f: ($s2_y / $s2_x),
+#       dir: "right over left"
+#     }
+#   }
+# }
+
+# export def "student t1a" [
+#   x: list<float>,
+#   t: float,
+# ] {
+#   {
+#     mean: ($x | math avg),
+#     err: ($t * ($x | stderr))
+#   }
+# }
+
+# export def "student t2a" [
+#   x: list<float>,
+#   y: list<float>
+# ] {
+#   let n_x = $x | length
+#   let n_y = $y | length
+
+#   let xbar_x = $x | math avg
+#   let xbar_y = $y | math avg
+
+#   let s2n_x = ($x | math stddev) ** 2 * ($n_x - 1)
+#   let s2n_y = ($y | math stddev) ** 2 * ($n_y - 1)
+  
+#   let s_pooled = (
+#       ($s2n_x + $s2n_y) /
+#       ($n_x + $n_y - 2)
+#     )
+#     | math sqrt
+#   let avg_diff = ($xbar_x - $xbar_y) | math abs
+
+#   $avg_diff / $s_pooled * (($n_x * $n_y / ($n_x + $n_y)) | math sqrt)
+# }
+
+# export def "student t2b" [
+#   x: list<float>,
+#   y: list<float>
+# ] {
+#   let n_x = $x | length
+#   let n_y = $y | length
+
+#   let xbar_x = $x | math avg
+#   let xbar_y = $y | math avg
+
+#   let u2_x = ($x | stderr) ** 2
+#   let u2_y = ($y | stderr) ** 2
+
+#   let u2_sum = $u2_x + $u2_y
+#   let avg_diff = ($xbar_x - $xbar_y) | math abs
+
+#   {
+#     t: ($avg_diff / ($u2_sum | math sqrt)),
+#     degrees_of_freedom: (($u2_sum ** 2) / (($u2_x ** 2) / ($n_x - 1) + ($u2_y ** 2) / ($n_y - 1)))
+#   }
+# }
+
+# Solves the quadratic equation and provides the two possible values in an array.
+export def quad [
+  a: float,
+  b: float,
+  c: float
+] {
+  let a2 = 2 * $a
+  let const = -1 * $b / $a2
+  let plusminus = ($b ** 2.0) - (4 * $a * $c) | math sqrt | $in / $a2
+
+  [(-1 * $plusminus) (+1 * $plusminus)] | each { $in + $const }
+}
